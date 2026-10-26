@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "mode": "notify",
+  "minOps": 2,
+  "maxLen": 32,
+  "delayMs": 10000,
+  "apiKey": "",
+  "llmModel": "GLM-5.3",
+  "baseUrl": "https://bigmodel.cn/api/paas/v4"
+}

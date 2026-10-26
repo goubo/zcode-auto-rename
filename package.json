@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "zcode-auto-rename",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "ZCode session auto-rename plugin (Stop hook + rule/LLM title engines).",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test test/*.mjs"
+  }
+}

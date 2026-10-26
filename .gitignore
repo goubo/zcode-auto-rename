@@ -1,0 +1,11 @@
+# 用户本地配置（含 apiKey，统一放 ~/.zcode/auto-rename/config.json）
+config.json
+.backfill-config.json
+
+# 回填运行状态与日志
+.backfill-state/
+.backfill-state-dry/
+
+node_modules/
+*.log
+.DS_Store

@@ -1,0 +1,31 @@
+{
+  "name": "zcode-auto-rename",
+  "description": "Local marketplace for the zcode-auto-rename plugin.",
+  "plugins": [
+    {
+      "name": "zcode-auto-rename",
+      "source": "./",
+      "version": "1.1.0",
+      "displayName": "Auto Rename Sessions",
+      "displayName_i18n": { "zh-CN": "会话自动重命名" },
+      "description": "Auto-rename ZCode sessions with sub-project tags: a Stop hook analyzes user inputs and tool paths and generates titles via rules or an optional GLM engine, plus an on-demand /rename-session command.",
+      "description_i18n": {
+        "en": "Auto-rename ZCode sessions with sub-project tags: a Stop hook analyzes user inputs and tool paths and generates titles via rules or an optional GLM engine, plus an on-demand /rename-session command.",
+        "zh-CN": "ZCode 会话自动重命名插件：Stop hook 分析用户输入与工具操作路径，识别子项目标签与主线目标，规则引擎或可选 GLM 引擎生成标题，另提供 /rename-session 命令按需主动重命名。"
+      },
+      "author": { "name": "鱍鱍" },
+      "category": "productivity",
+      "keywords": [
+        "hooks",
+        "session",
+        "naming",
+        "title",
+        "productivity",
+        "local-first",
+        "llm",
+        "command"
+      ],
+      "componentTypes": ["hook", "command"]
+    }
+  ]
+}
