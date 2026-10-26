@@ -32,9 +32,9 @@ Stop hook（每轮对话结束）
 
 ## 安装
 
-通过插件市场安装（唯一支持方式）：
+通过插件市场安装（唯一支持方式）。本插件收录在 [goubo/zcode-plugins](https://github.com/goubo/zcode-plugins) 市场：
 
-1. ZCode → **设置 → 插件管理 → Discover 页签 → `+` → 添加插件市场**，粘贴 GitHub 仓库地址：<https://github.com/goubo/zcode-auto-rename>；
+1. ZCode → **设置 → 插件管理 → Discover 页签 → `+` → 添加插件市场**，粘贴市场仓库地址：<https://github.com/goubo/zcode-plugins>；
 2. 在市场列表找到 `zcode-auto-rename` → **Get**，安装后默认启用，Stop hook 与 `/rename-session` 命令自动注册；
 3. 新开会话生效。更新：插件管理界面刷新市场后按提示升级。
 
@@ -111,7 +111,6 @@ node --test test/*.mjs # 单测 + 真实库集成测试（auto 模式在库副�
 ```
 zcode-auto-rename/
 ├── .zcode-plugin/plugin.json   # 插件清单（版本、关键词标签、hooks/commands/userConfig 声明）
-├── marketplace.json            # 本地插件市场条目（源指向仓库根）
 ├── hooks/hooks.json            # Stop hook 声明（${ZCODE_PLUGIN_ROOT} 定位插件根）
 ├── commands/rename-session.md  # /rename-session 主动重命名命令
 ├── hook.mjs                    # Stop hook 入口（校验、派发、记录插件根路径）
