@@ -45,7 +45,10 @@ test("notify 模式端到端：生成建议并记录状态，不动真实库", a
   if (!sid) return;
   const stateDir = mkdtempSync(join(tmpdir(), "ar-state-"));
   process.env.AUTO_RENAME_STATE_DIR = stateDir;
-  const result = await runOnce({ sessionId: sid, configPath: null });
+  // 显式配置＝整文件覆盖：隔离本机真实配置（mode/apiKey），保证 notify 语义与确定性
+  const configPath = join(stateDir, "config.json");
+  writeFileSync(configPath, JSON.stringify({ mode: "notify" }));
+  const result = await runOnce({ sessionId: sid, configPath });
   assert.ok(["suggested", "same_as_current", "unchanged", "skip_no_content", "manual_title"].includes(result.status));
   if (result.status === "suggested") {
     assert.ok(result.title && result.title.length > 3);

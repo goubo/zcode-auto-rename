@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { runOnce, resolveConfigPath } from "./worker.mjs";
+import { runOnce } from "./worker.mjs";
 
 const execFileAsync = promisify(execFile);
 const TASKS_DB = join(homedir(), ".zcode/v2/tasks-index.sqlite");
@@ -34,11 +34,10 @@ const MESSAGES = {
 async function main() {
   const row = await latestActiveSession();
   if (!row) { console.log("没有活跃会话"); return; }
-  const configPath = await resolveConfigPath();
+  // 不传 configPath：走完整配置层（UI userConfig + 用户配置文件），再强制 auto 应用
   const result = await runOnce({
     sessionId: row.task_id,
-    configPath,
-    overrides: { mode: "auto" }, // 主动触发即应用改名；manual_title 保护仍生效
+    overrides: { mode: "auto" },
     force: true, // 跳过指纹去重：允许重复触发
   });
   const render = MESSAGES[result.status];

@@ -13,20 +13,64 @@ import { generateTitleWithLLM } from "./llm.mjs";
 import { notify, applyRename, logJson } from "./apply.mjs";
 
 const DELAY_MS = 10000;
+const PLUGIN_NAME = "zcode-auto-rename";
 const DEFAULT_STATE_DIR = join(homedir(), ".zcode/auto-rename");
 const STATE_DIR = process.env.AUTO_RENAME_STATE_DIR || DEFAULT_STATE_DIR;
 const STATE_FILE = join(STATE_DIR, "state.json");
 const LOG_FILE = join(STATE_DIR, "log.jsonl");
+const CLI_CONFIG_PATH = join(homedir(), ".zcode/cli/config.json");
+const INSTALLED_PLUGINS_PATH = join(homedir(), ".zcode/cli/plugins/installed_plugins.json");
 
-async function loadConfig(configPath) {
-  const defaults = { mode: "notify", minOps: 2, maxLen: 32, delayMs: DELAY_MS, enabled: true };
-  if (!configPath) return defaults;
-  try {
-    return { ...defaults, ...JSON.parse(await readFile(configPath, "utf8")) };
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-    return defaults;
+async function readJsonSafe(path) {
+  try { return JSON.parse(await readFile(path, "utf8")); } catch { return null; }
+}
+
+// 显式配置文件：--config 参数或 AUTO_RENAME_CONFIG 环境变量（整文件覆盖，用于测试与工具链完全掌控）
+export function resolveExplicitConfigPath() {
+  for (let i = 2; i < process.argv.length; i++) {
+    if (process.argv[i] === "--config" && process.argv[i + 1]) return resolve(process.argv[++i]);
   }
+  return process.env.AUTO_RENAME_CONFIG ? resolve(process.env.AUTO_RENAME_CONFIG) : null;
+}
+
+// 插件详情页 Advanced 的 userConfig 值：宿主持久化于 cli config 的 plugins.options，
+// 安装记录另存 configuredOptions（互为冗余）；键匹配 name 或 name@marketplace
+export async function readUserConfigValues(cliConfigPath = CLI_CONFIG_PATH, installedPath = INSTALLED_PLUGINS_PATH) {
+  const values = {};
+  const cli = await readJsonSafe(cliConfigPath);
+  for (const [key, val] of Object.entries(cli?.plugins?.options ?? {})) {
+    if ((key === PLUGIN_NAME || key.startsWith(PLUGIN_NAME + "@")) && val && typeof val === "object") Object.assign(values, val);
+  }
+  if (Object.keys(values).length) return values;
+  const scan = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) { for (const n of node) scan(n); return; }
+    const id = node.id ?? node.name;
+    if (typeof id === "string" && (id === PLUGIN_NAME || id.startsWith(PLUGIN_NAME + "@")) && node.configuredOptions) {
+      Object.assign(values, node.configuredOptions);
+    }
+    for (const v of Object.values(node)) scan(v);
+  };
+  scan(await readJsonSafe(installedPath));
+  return values;
+}
+
+// 配置合并：
+//   显式文件（--config / AUTO_RENAME_CONFIG / runOnce 的 configPath 参数）＝ 整文件覆盖，跳过其余层
+//   否则按 key 覆盖：UI userConfig > ~/.zcode/auto-rename/config.json > 插件目录 config.json（历史兼容）> 默认
+//   AUTO_RENAME_API_KEY 环境变量单独覆盖 apiKey（敏感项不进 UI，见 plugin.json userConfig）
+export async function loadEffectiveConfig({ explicitPath = null, overrides = {}, cliConfigPath, installedPath, userConfigPath } = {}) {
+  const defaults = { mode: "notify", minOps: 2, maxLen: 32, delayMs: DELAY_MS, enabled: true };
+  if (explicitPath) {
+    const explicit = (await readJsonSafe(explicitPath)) ?? {};
+    return { ...defaults, ...explicit, ...overrides };
+  }
+  const legacy = (await readJsonSafe(fileURLToPath(new URL("./config.json", import.meta.url)))) ?? {};
+  const userFile = (await readJsonSafe(userConfigPath ?? join(DEFAULT_STATE_DIR, "config.json"))) ?? {};
+  const uiValues = await readUserConfigValues(cliConfigPath, installedPath);
+  const config = { ...defaults, ...legacy, ...userFile, ...uiValues };
+  if (process.env.AUTO_RENAME_API_KEY) config.apiKey = process.env.AUTO_RENAME_API_KEY;
+  return { ...config, ...overrides };
 }
 
 export async function loadState() {
@@ -47,7 +91,7 @@ export async function saveState(state) {
 
 export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, tasksDb = TASKS_DB, now = Date.now, force = false, overrides = {} }) {
   assertSessionId(sessionId);
-  const config = { ...(await loadConfig(configPath)), ...overrides };
+  const config = await loadEffectiveConfig({ explicitPath: configPath, overrides });
   const log = (entry) => logJson(LOG_FILE, { sessionId, ...entry });
   if (config.enabled === false) return { status: "disabled" };
   // manual 模式：Stop hook 不做任何处理，仅 /rename-session 命令按需触发（rename-now.mjs 用 overrides 覆盖）
@@ -150,8 +194,7 @@ export async function main() {
   let raw = "";
   for await (const chunk of process.stdin) raw += chunk;
   const event = JSON.parse(raw);
-  const configPath = await resolveConfigPath();
-  const config = await loadConfig(configPath);
+  const config = await loadEffectiveConfig({ explicitPath: resolveExplicitConfigPath() });
   if (config.mode === "manual") {
     // manual 模式：不延迟、不分析、不通知，标题只在 /rename-session 命令触发时更新
     process.stderr.write("auto-rename: manual mode, hook skipped\n");

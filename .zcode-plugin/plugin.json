@@ -1,6 +1,6 @@
 {
   "name": "zcode-auto-rename",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Auto-rename ZCode sessions with sub-project tags: a Stop hook analyzes user inputs and tool paths and generates titles via rules or an optional GLM engine, plus an on-demand /rename-session command.",
   "description_i18n": {
     "en": "Auto-rename ZCode sessions with sub-project tags: a Stop hook analyzes user inputs and tool paths and generates titles via rules or an optional GLM engine, plus an on-demand /rename-session command.",
@@ -16,8 +16,47 @@
     "productivity",
     "local-first",
     "llm",
-    "command"
+    "command",
+    "config"
   ],
   "hooks": "hooks",
-  "commands": "commands"
+  "commands": "commands",
+  "userConfig": {
+    "mode": {
+      "title": "命名模式",
+      "description": "notify：每轮结束通知建议标题；auto：每轮结束直接写库改名；manual：每轮不处理，仅 /rename-session 命令按需触发；dry：只生成不提示。",
+      "type": "string",
+      "default": "notify"
+    },
+    "minOps": {
+      "title": "子项目纳入阈值",
+      "description": "子目录被工具操作多少次才进标题前缀（防误判）。",
+      "type": "number",
+      "default": 2
+    },
+    "maxLen": {
+      "title": "标题长度上限",
+      "description": "标题长度上限（Unicode 字符）。",
+      "type": "number",
+      "default": 32
+    },
+    "delayMs": {
+      "title": "读取延迟（毫秒）",
+      "description": "Stop 后延迟读取会话库的毫秒数（等宿主持久化 turn 边界）。",
+      "type": "number",
+      "default": 10000
+    },
+    "llmModel": {
+      "title": "LLM 模型",
+      "description": "GLM 命名引擎使用的模型（配置 apiKey 后生效）。",
+      "type": "string",
+      "default": "GLM-5.3"
+    },
+    "baseUrl": {
+      "title": "LLM API 地址",
+      "description": "兼容 OpenAI 协议的 API 地址，默认 BigModel 开放平台。",
+      "type": "string",
+      "default": "https://bigmodel.cn/api/paas/v4"
+    }
+  }
 }

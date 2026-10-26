@@ -6,7 +6,7 @@ import {
   isSubstantive, buildTitle, normalizeTitle, charLen,
 } from "../analyze.mjs";
 
-const WS = "/Users/bo/my/work/日常工作";
+const WS = "/workspaces/daily-work";
 
 test("子项目识别：workspace 内一级目录，排除噪声与根", () => {
   assert.equal(subProjectFromPath(`${WS}/公司事务/绩效.md`, WS), "公司事务");
