@@ -44,7 +44,7 @@ Stop hook（每轮对话结束）
 
 ## 配置
 
-两层配置，按 key 合并，**插件设置（UI）优先**：
+两层配置，按 key 合并，**插件设置（UI）优先**。日常调整（切 notify/auto/manual 模式、阈值、延迟、模型、API 地址）全部在设置页面完成；**只有更换 apiKey 才需要动一次配置文件**——宿主目前没有凭据存储，敏感值无法经设置页持久化。
 
 ### 1. 插件设置（推荐）
 
@@ -63,7 +63,7 @@ Stop hook（每轮对话结束）
 
 放 UI 无法承载的项（模板见 `config.example.json`）：
 
-- **`apiKey`**（BigModel 开放平台 <https://bigmodel.cn/usercenter/apikeys>）：启用 GLM 命名引擎；敏感值不能进插件设置（宿主暂无凭据存储），也可用环境变量 `AUTO_RENAME_API_KEY`
+- **`apiKey`**（BigModel 开放平台 <https://bigmodel.cn/usercenter/apikeys>）：启用 GLM 命名引擎；设置页无法承载敏感值（宿主暂无凭据存储），仅更换 key 时编辑此文件，或改用环境变量 `AUTO_RENAME_API_KEY`
 - `enabled`：总开关（与插件启停独立）
 - 上述任何 key 也都可写在这里（会被 UI 同名值覆盖）
 
