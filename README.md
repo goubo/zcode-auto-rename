@@ -1,6 +1,6 @@
 # zcode-auto-rename
 
-[![Plugin](https://img.shields.io/badge/ZCode-Plugin-blue)](./.zcode-plugin/plugin.json) [![Version](https://img.shields.io/badge/version-1.2.0-green)](./.zcode-plugin/plugin.json) [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](#license)
+[![Plugin](https://img.shields.io/badge/ZCode-Plugin-blue)](./.zcode-plugin/plugin.json) [![Version](https://img.shields.io/badge/version-1.2.1-green)](./.zcode-plugin/plugin.json) [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](#license)
 
 ZCode 会话自动重命名插件：每轮对话结束后分析用户输入与工具操作，自动生成「子项目｜主线目标」格式的会话标题；也支持 `manual` 模式 + `/rename-session` 命令按需主动重命名。
 
@@ -23,11 +23,12 @@ Stop hook（每轮对话结束）
     插件自己写入的标题除外，可随会话演进继续更新）
   → 指纹去重：无新消息不重复命名
   → 分析：子项目标签（操作频次）+ 主线目标（首条实质输入，近期明显转向时跟随）
-  → 生成标题：[子项目]｜目标（规则引擎；配置 apiKey 后用 GLM 生成，失败回退规则）
+  → 生成标题：[子项目]｜目标（配置 apiKey 后走 LLM 引擎生成，失败不回退、本轮跳过；未配置 apiKey 时用规则引擎）
   → 应用：notify（macOS 通知）或 auto（双库事务写入）
 ```
 
 - 标题格式：`子项目｜目标`，如 `公司事务｜绩效材料整理`、`海淀+海办｜周报汇总`；无子项目操作时退化为操作类型前缀（如 `Bug修复｜...`）或只写目标。
+- 命名需要一个 LLM：插件本身不带模型，需配置 `apiKey` + `baseUrl` + `llmModel`，兼容任意 OpenAI 协议端点。**推荐低价模型 DeepSeek Flash**：`baseUrl: https://api.deepseek.com/v1`、`llmModel: deepseek-flash`，一次命名仅数百 token，成本可忽略。
 - 纯本地运行：除可选的 LLM 命名请求外不访问网络，不收集数据。
 
 ## 安装
@@ -56,8 +57,8 @@ Stop hook（每轮对话结束）
 | `minOps` | `2` | 子目录被工具操作多少次才进标题前缀（防误判） |
 | `maxLen` | `32` | 标题长度上限（Unicode 字符） |
 | `delayMs` | `10000` | Stop 后延迟读取会话库的毫秒数 |
-| `llmModel` | `GLM-5.3` | GLM 命名引擎模型 |
-| `baseUrl` | BigModel v4 | 兼容 OpenAI 协议的 API 地址 |
+| `llmModel` | `GLM-5.3` | 命名引擎模型；推荐低价模型，如 DeepSeek 的 `deepseek-flash` |
+| `baseUrl` | BigModel v4 | 兼容 OpenAI 协议的 API 地址，如 `https://api.deepseek.com/v1` |
 | `followSessionModel` | `off` | `on`：命名跟随当前会话所用的网关模型（识别 `magpie/` 前缀，其余回落 `llmModel`）；`off`：固定用 `llmModel` |
 
 ### 2. 用户配置文件 `~/.zcode/auto-rename/config.json`
