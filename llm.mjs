@@ -38,11 +38,12 @@ export async function generateTitleWithLLM({ userInputs, subProjects, workspaceN
         }),
       },
     ],
-    // GLM-5.3 是思考模型：不禁思考时 max_tokens 会被 reasoning 耗尽，content 返回空
-    thinking: { type: "disabled" },
     max_tokens: 512,
     temperature: 0.2,
   };
+  // GLM-5.3 是思考模型：不禁思考时 max_tokens 会被 reasoning 耗尽，content 返回空；
+  // 该参数为 GLM 专有，DeepSeek 等其他 OpenAI 兼容端点不接受
+  if (/glm/i.test(model) || /bigmodel|z\.ai/i.test(baseUrl)) payload.thinking = { type: "disabled" };
   // 网关/上游存在首请求 401 挑战（同请求重放即 200），401/403 自动重试一次
   let res = null;
   let errBody = "";
