@@ -1,6 +1,6 @@
 {
   "name": "zcode-auto-rename",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Auto-rename ZCode sessions with sub-project tags: a Stop hook analyzes user inputs and tool paths and generates titles via rules or an optional GLM engine, plus an on-demand /rename-session command.",
   "description_i18n": {
     "en": "Auto-rename ZCode sessions with sub-project tags: a Stop hook analyzes user inputs and tool paths and generates titles via rules or an optional GLM engine, plus an on-demand /rename-session command.",
