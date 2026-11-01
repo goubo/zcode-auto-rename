@@ -148,6 +148,7 @@ export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, t
         userInputs, subProjects,
         workspaceName: workspacePath?.split("/").filter(Boolean).pop() ?? "",
         apiKey: config.apiKey,
+        baseUrl: config.baseUrl,
         model,
       });
     } catch (e) { log({ action: "llm_error", model, error: String(e.message).slice(0, 120) }).catch(() => {}); }
