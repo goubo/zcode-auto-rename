@@ -90,6 +90,16 @@ export async function saveState(state) {
   await writeFile(stateFile(), JSON.stringify(merged, null, 2), "utf8");
 }
 
+// 跟随会话模型：仅识别经 magpie 网关的会话（taskRow.model 形如 "magpie/zcode/GLM-5.3-Flash-Trial"，
+// 去掉一级 provider 前缀即网关模型名）；原生账号直连等非网关形态返回 null，回落固定模型。
+// 开关 followSessionModel 取 "on"/true 生效，默认 off。
+export function resolveSessionModel(taskRow, config) {
+  const on = config.followSessionModel === true || config.followSessionModel === "on";
+  if (!on) return null;
+  const m = taskRow?.model;
+  return typeof m === "string" && m.startsWith("magpie/") ? m.slice("magpie/".length) : null;
+}
+
 export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, tasksDb = TASKS_DB, now = Date.now, force = false, overrides = {} }) {
   assertSessionId(sessionId);
   const config = await loadEffectiveConfig({ explicitPath: configPath, overrides });
@@ -128,17 +138,20 @@ export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, t
   const thread = mainThread(userInputs);
   let title = null;
   let engine = "llm";
+  let model = config.llmModel ?? "GLM-5.3";
   if (config.apiKey) {
     // 固定 LLM 引擎：配置了 apiKey 就不回落规则标题，失败/无输出时直接不处理（额度不足宁可不改名）
+    // followSessionModel=on 时跟随会话所用网关模型，命名消耗随会话额度池走
+    model = resolveSessionModel(taskRow, config) ?? model;
     try {
       title = await generateTitleWithLLM({
         userInputs, subProjects,
         workspaceName: workspacePath?.split("/").filter(Boolean).pop() ?? "",
         apiKey: config.apiKey,
-        model: config.llmModel ?? "GLM-5.3",
+        model,
       });
-    } catch (e) { log({ action: "llm_error", error: String(e.message).slice(0, 120) }).catch(() => {}); }
-    if (!title) { await log({ action: "skip_llm_unavailable" }); return { status: "skip_llm_unavailable" }; }
+    } catch (e) { log({ action: "llm_error", model, error: String(e.message).slice(0, 120) }).catch(() => {}); }
+    if (!title) { await log({ action: "skip_llm_unavailable", model }); return { status: "skip_llm_unavailable" }; }
   } else {
     // 未配置 apiKey（开源默认形态）：规则引擎
     engine = "rule";
@@ -171,7 +184,7 @@ export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, t
   }
   state[sessionId] = { fingerprint, title, applied, engine, at: new Date(now()).toISOString() };
   await saveState(state);
-  await log({ action: applied, title, oldTitle: currentTitle, engine, subProjects: subProjects.slice(0, 3), turns: thread?.turns ?? 0, evolved: thread?.evolved ?? false, error });
+  await log({ action: applied, title, oldTitle: currentTitle, engine, model, subProjects: subProjects.slice(0, 3), turns: thread?.turns ?? 0, evolved: thread?.evolved ?? false, error });
   return { status: applied, title, engine, evolved: thread?.evolved ?? false };
 }
 

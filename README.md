@@ -58,6 +58,7 @@ Stop hook（每轮对话结束）
 | `delayMs` | `10000` | Stop 后延迟读取会话库的毫秒数 |
 | `llmModel` | `GLM-5.3` | GLM 命名引擎模型 |
 | `baseUrl` | BigModel v4 | 兼容 OpenAI 协议的 API 地址 |
+| `followSessionModel` | `off` | `on`：命名跟随当前会话所用的网关模型（识别 `magpie/` 前缀，其余回落 `llmModel`）；`off`：固定用 `llmModel` |
 
 ### 2. 用户配置文件 `~/.zcode/auto-rename/config.json`
 
