@@ -30,7 +30,7 @@ export async function readTaskRow(sessionId, tasksDb = TASKS_DB) {
   assertSessionId(sessionId);
   const rows = await queryJson(
     tasksDb,
-    `SELECT task_id, workspace_path, title, task_status, title_overridden, archived, deleted
+    `SELECT task_id, workspace_path, title, task_status, title_overridden, archived, deleted, model
      FROM tasks WHERE task_id='${sessionId}';`
   );
   return rows[0] ?? null;

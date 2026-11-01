@@ -43,13 +43,22 @@ export async function generateTitleWithLLM({ userInputs, subProjects, workspaceN
     max_tokens: 512,
     temperature: 0.2,
   };
-  const res = await fetchImpl(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!res.ok) throw new Error(`LLM HTTP ${res.status}`);
+  // 网关/上游存在首请求 401 挑战（同请求重放即 200），401/403 自动重试一次
+  let res = null;
+  let errBody = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    if (attempt > 1) await new Promise((r) => setTimeout(r, 1000));
+    res = await fetchImpl(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (res.ok) break;
+    errBody = await res.text().catch(() => "");
+    if (res.status !== 401 && res.status !== 403) break;
+  }
+  if (!res.ok) throw new Error(`LLM HTTP ${res.status} ${String(errBody).slice(0, 200)}`);
   const data = await res.json();
   const message = data.choices?.[0]?.message ?? {};
   const text = message.content || message.reasoning_content || "";
