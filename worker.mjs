@@ -15,9 +15,10 @@ import { notify, applyRename, logJson } from "./apply.mjs";
 const DELAY_MS = 10000;
 const PLUGIN_NAME = "zcode-auto-rename";
 const DEFAULT_STATE_DIR = join(homedir(), ".zcode/auto-rename");
-const STATE_DIR = process.env.AUTO_RENAME_STATE_DIR || DEFAULT_STATE_DIR;
-const STATE_FILE = join(STATE_DIR, "state.json");
-const LOG_FILE = join(STATE_DIR, "log.jsonl");
+// 测试以 AUTO_RENAME_STATE_DIR 隔离状态目录；env 在模块导入后才设置，必须每次读取
+const stateDir = () => process.env.AUTO_RENAME_STATE_DIR || DEFAULT_STATE_DIR;
+const stateFile = () => join(stateDir(), "state.json");
+const logFile = () => join(stateDir(), "log.jsonl");
 const CLI_CONFIG_PATH = join(homedir(), ".zcode/cli/config.json");
 const INSTALLED_PLUGINS_PATH = join(homedir(), ".zcode/cli/plugins/installed_plugins.json");
 
@@ -74,7 +75,7 @@ export async function loadEffectiveConfig({ explicitPath = null, overrides = {},
 }
 
 export async function loadState() {
-  try { return JSON.parse(await readFile(STATE_FILE, "utf8")); } catch { return {}; }
+  try { return JSON.parse(await readFile(stateFile(), "utf8")); } catch { return {}; }
 }
 
 export async function saveState(state) {
@@ -85,14 +86,14 @@ export async function saveState(state) {
   for (const [k, v] of Object.entries(state)) {
     if (!merged[k] || (v.at ?? "") >= (merged[k].at ?? "")) merged[k] = v;
   }
-  await mkdir(STATE_DIR, { recursive: true });
-  await writeFile(STATE_FILE, JSON.stringify(merged, null, 2), "utf8");
+  await mkdir(stateDir(), { recursive: true });
+  await writeFile(stateFile(), JSON.stringify(merged, null, 2), "utf8");
 }
 
 export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, tasksDb = TASKS_DB, now = Date.now, force = false, overrides = {} }) {
   assertSessionId(sessionId);
   const config = await loadEffectiveConfig({ explicitPath: configPath, overrides });
-  const log = (entry) => logJson(LOG_FILE, { sessionId, ...entry });
+  const log = (entry) => logJson(logFile(), { sessionId, ...entry });
   if (config.enabled === false) return { status: "disabled" };
   // manual 模式：Stop hook 不做任何处理，仅 /rename-session 命令按需触发（rename-now.mjs 用 overrides 覆盖）
   if (config.mode === "manual") return { status: "manual_mode" };
@@ -194,7 +195,8 @@ export async function main() {
   let raw = "";
   for await (const chunk of process.stdin) raw += chunk;
   const event = JSON.parse(raw);
-  const config = await loadEffectiveConfig({ explicitPath: resolveExplicitConfigPath() });
+  const configPath = resolveExplicitConfigPath();
+  const config = await loadEffectiveConfig({ explicitPath: configPath });
   if (config.mode === "manual") {
     // manual 模式：不延迟、不分析、不通知，标题只在 /rename-session 命令触发时更新
     process.stderr.write("auto-rename: manual mode, hook skipped\n");
