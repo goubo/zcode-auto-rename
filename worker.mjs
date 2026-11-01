@@ -127,9 +127,9 @@ export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, t
   const subProjects = countSubProjects(toolPaths, workspacePath);
   const thread = mainThread(userInputs);
   let title = null;
-  let engine = "rule";
+  let engine = "llm";
   if (config.apiKey) {
-    engine = "llm";
+    // 固定 LLM 引擎：配置了 apiKey 就不回落规则标题，失败/无输出时直接不处理（额度不足宁可不改名）
     try {
       title = await generateTitleWithLLM({
         userInputs, subProjects,
@@ -138,10 +138,13 @@ export async function runOnce({ sessionId, configPath, sessionDb = SESSION_DB, t
         model: config.llmModel ?? "GLM-5.3",
       });
     } catch (e) { log({ action: "llm_error", error: String(e.message).slice(0, 120) }).catch(() => {}); }
-    if (!title) engine = "rule(fallback)";
+    if (!title) { await log({ action: "skip_llm_unavailable" }); return { status: "skip_llm_unavailable" }; }
+  } else {
+    // 未配置 apiKey（开源默认形态）：规则引擎
+    engine = "rule";
+    title = buildTitle({ subProjects, thread, minOps: config.minOps, maxLen: config.maxLen });
+    if (!title) { await log({ action: "skip_no_content" }); return { status: "skip_no_content" }; }
   }
-  if (!title) title = buildTitle({ subProjects, thread, minOps: config.minOps, maxLen: config.maxLen });
-  if (!title) { await log({ action: "skip_no_content" }); return { status: "skip_no_content" }; }
 
   if (normalizeTitle(title) === normalizeTitle(currentTitle)) {
     // 保留 prev 的 applied/engine：same_as_current 不改名，所有权记录不能丢
